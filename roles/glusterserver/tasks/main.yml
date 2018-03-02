@@ -1,0 +1,62 @@
+---
+
+- name: Add epel repositories
+  yum: name=epel-release state=installed
+  when: os.centos
+  tags:
+    - gluster
+  become: true
+
+- name: Install centos gluster (CentOS)
+  yum: name=centos-release-gluster312 state=installed
+  when: os.centos
+  tags:
+    - gluster
+  become: true
+
+- name: Install glusterfs packages (CentOS)
+  yum: name={{item}} state=installed
+  with_items:
+    - glusterfs
+    - glusterfs-cli
+    - glusterfs-libs
+    - glusterfs-server
+  when: os.centos
+  tags:
+    - gluster
+  become: true
+
+- name: Ensure the GlusterFS service is running (CentOS)
+  service: 
+    name=glusterd 
+    state=started 
+    enabled=yes
+  when: os.centos
+  tags:
+    - gluster
+  become: true
+
+- firewalld:
+    port: 24007-24008/tcp
+    permanent: true
+    zone: public
+    state: enabled
+  become: true
+
+- name: Reload firewalld
+  service: name=firewalld state=reloaded
+  become: true
+
+- debug: msg="We will peer {{ hostvars[item]['ansible_host'] }}"
+  with_items: "{{ groups['gluster_data'] }}"
+  when: (inventory_hostname == groups.gluster_data[0]) and
+        (item != inventory_hostname)
+
+- name: Configure peers (Only on the first host)
+  shell: gluster peer probe {{ hostvars[item]['ansible_host'] }}
+  with_items: "{{ groups['gluster_data'] }}"
+  when: (inventory_hostname == groups.gluster_data[0]) and
+        (item != inventory_hostname)
+  tags:
+    - gluster
+  become: true

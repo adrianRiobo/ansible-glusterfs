@@ -1,0 +1,16 @@
+---
+
+- hosts: compute
+  tasks:
+  - debug:
+      msg: "Running glusterclient role"
+  - import_role:
+      name: glusterclient
+  - debug:
+      msg: "Installing docker"
+  - import_role:
+      name: dockerengine
+  - debug:
+      msg: "Installing rancher"
+  - import_role:
+      name: ranchergluster

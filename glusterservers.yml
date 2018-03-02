@@ -1,0 +1,16 @@
+---
+
+- hosts: storage
+  tasks:
+  - debug:
+      msg: "Running glusterserver role"
+  - import_role:
+      name: glusterserver
+  - debug:
+      msg: "Create logical volume"
+  - import_role:
+      name: logicalvolume
+  - debug:
+      msg: "Create gluster volume with replication"
+  - import_role:
+      name: glustervolumereplicated

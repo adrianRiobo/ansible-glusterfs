@@ -1,0 +1,42 @@
+---
+
+- name: Add firewall rule for bricks
+  firewalld:
+    port: 49152/tcp
+    permanent: true
+    zone: public
+    state: enabled
+  tags:
+    - glustervolumereplicated
+  become: true
+
+- name: Reload firewalld to apply new rul
+  service: 
+    name=firewalld 
+    state=reloaded
+  tags:
+    - glustervolumereplicated
+  become: true
+
+- name: Create brick directory
+  file: 
+    path: /bricks/brick 
+    state: directory
+  tags:
+    - glustervolumereplicated
+  become: true
+
+- name: Create gluster volume replicated (Only on the first host)
+  shell: gluster volume create glustervolume replica 3 transport tcp {{ hostvars['storage1']['ansible_host'] }}:/bricks/brick \
+         {{ hostvars['storage2']['ansible_host'] }}:/bricks/brick {{ hostvars['storage3']['ansible_host'] }}:/bricks/brick
+  when: inventory_hostname == "storage1"
+  tags:
+    - glustervolumereplicated
+  become: true
+
+- name: Start gluster volume replicated (Only on the first host)
+  shell: gluster volume start glustervolume
+  when: inventory_hostname == "storage1"
+  tags:
+    - glustervolumereplicated
+  become: true

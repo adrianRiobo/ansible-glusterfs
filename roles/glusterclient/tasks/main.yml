@@ -1,0 +1,51 @@
+---
+
+- name: Add fuse module
+  modprobe:
+    name: fuse
+    state: present
+  when: os.centos
+  tags:
+    - glusterclient
+  become: true
+
+- name: Install centos gluster (CentOS)
+  yum: name=centos-release-gluster312 state=installed
+  when: os.centos
+  tags:
+    - glusterclient
+  become: true
+
+- name: Install glusterclient packages (CentOS)
+  yum: name={{item}} state=installed
+  with_items:
+    - glusterfs
+    - glusterfs-fuse
+    - attr
+  when: os.centos
+  tags:
+    - gluster
+  become: true
+
+- firewalld:
+    port: 49152/tcp
+    permanent: true
+    zone: public
+    state: enabled
+  become: true
+
+- name: Reload firewalld
+  service: name=firewalld state=reloaded
+  become: true
+
+- name: Mount Gluster Volume
+  mount:
+    path: /mnt/glusterfs
+    src: "{{ hostvars['storage1']['ansible_host'] }}:/glustervolume"
+    fstype: glusterfs
+    opts: "backupvolfile-server={{ hostvars['storage2']['ansible_host'] }}:{{ hostvars['storage3']['ansible_host'] }},use-readdirp=no,log-level=WARNING,log-file=/var/log/gluster.log"
+    state: mounted
+  tags:
+    - create-logicalvolume
+  become: true
+
